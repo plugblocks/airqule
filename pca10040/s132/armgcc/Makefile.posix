@@ -1,0 +1,7 @@
+GNU_INSTALL_ROOT := /usr/local/gcc-arm-none-eabi-4_9-2015q3
+GNU_VERSION := 4.9.3
+GNU_PREFIX := arm-none-eabi
+
+NRFJPROG := /usr/local/nRF5x-Command-Line-Tools_9_7_2_OSX/nrfjprog/nrfjprog
+MERGEHEX := /usr/local/nRF5x-Command-Line-Tools_9_7_2_OSX/mergehex/mergehex
+NRFUTIL  := nrfutil
