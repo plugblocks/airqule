@@ -55,7 +55,8 @@ extern "C" {
 
 #define MAIN_WKUP_GPIO_ENABLE_DEFAULT 2   //LED CONTROL
 #undef CWIFI_SEC_RETRY_TIMEOUT_SEC_DEFAULT
-#define CWIFI_SEC_RETRY_TIMEOUT_SEC_DEFAULT CWIFI_SEC_RETRY_TIMEOUT_SEC_MIN
+
+#define CWIFI_SEC_RETRY_TIMEOUT_SEC_DEFAULT CWIFI_SEC_RETRY_TIMEOUT_SEC_MIN
 
 #if (CDEV_BOARD_TYPE == CDEV_BOARD_M3)
 #undef MAIN_BOOT_NFC_UNLOCK_DEFAULT
@@ -246,7 +247,6 @@ extern const char m_cfg_board_type;
 extern const char m_cfg_build_date[];
 extern const char m_cfg_build_time[];
 
-extern volatile bool main_wakeup_interrupt;
 extern bool m_cfg_sw_reset_detected;
 extern bool m_cfg_debug_interface_wake_up_detected;
 extern bool m_cfg_available_bootloader_detected;

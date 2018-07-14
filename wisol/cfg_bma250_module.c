@@ -40,6 +40,7 @@
 #include "cfg_board.h"
 #include "nrf_delay.h"
 
+//static const nrf_drv_spi_t spi = NRF_DRV_SPI_INSTANCE(GSEN_SPI_INSTANCE);  /**< SPI instance. */
 extern volatile bool spi_xfer_done;  /**< Flag used to indicate that SPI instance completed the transfer. */
 
 /* TWI instance. */
@@ -141,6 +142,36 @@ void acc_bypass_put(const char * data, int size)
 
 #endif
 
+/**
+ * @brief SPI user event handler.
+ * @param event
+ 
+void spi_event_handler(nrf_drv_spi_evt_t const * p_event)
+{
+    spi_xfer_done = true;
+    NRF_LOG_INFO("Transfer completed.\r\n");
+    if (m_rx_buf[0] != 0)
+    {
+        NRF_LOG_INFO(" Received: \r\n");
+        NRF_LOG_HEXDUMP_INFO(m_rx_buf, strlen((const char *)m_rx_buf));
+    }
+}
+
+void cfg_bma250_spi_init(void)
+{
+    nrf_drv_spi_config_t spi_config;
+    memcpy(&spi_config, &m_spi_config_default, sizeof(nrf_drv_spi_config_t));
+    spi_config.ss_pin   = 20;
+    spi_config.miso_pin = 16;
+    spi_config.mosi_pin = 15;
+    spi_config.sck_pin  = 18;
+//  spi_config.frequency
+//  spi_config.bit_order
+//  spi_config.irq_priority
+    spi_config.mode = NRF_DRV_SPI_MODE_3;
+//  spi_config.orc
+    APP_ERROR_CHECK(nrf_drv_spi_init(&spi, &spi_config, spi_event_handler));
+}*/
 
 void bma250_power_on()
 {
@@ -302,6 +333,7 @@ uint32_t bma250_slope_set()
 {
     uint32_t timeout;
 
+// Not our case (CDEV_BOARD_EVB)
 #if (CDEV_BOARD_TYPE == CDEV_BOARD_IHERE) || (CDEV_BOARD_TYPE == CDEV_BOARD_IHERE_MINI) || (CDEV_BOARD_TYPE == CDEV_BOARD_IHEREV2) || (CDEV_BOARD_TYPE == CDEV_BOARD_M3)
     spi_xfer_done = false;
     m_tx_buf[0] = 0xB6;
@@ -317,9 +349,12 @@ uint32_t bma250_slope_set()
     m_tx_buf[0] = 0x5C;
     timeout = MPU_TWI_TIMEOUT;
 
+    // LOW_POWER mode with sleep phase duration of 500 ms 
     bma250_i2c_bus_write(BMA2x2_MODE_CTRL_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
+    
+// Not our case (CDEV_BOARD_EVB)
 #if (CDEV_BOARD_TYPE == CDEV_BOARD_IHERE) || (CDEV_BOARD_TYPE == CDEV_BOARD_IHEREV2) || (CDEV_BOARD_TYPE == CDEV_BOARD_M3)
     spi_xfer_done = false;
     m_tx_buf[0] = BMA2x2_RANGE_2G;
@@ -385,6 +420,7 @@ uint32_t bma250_slope_set()
     m_tx_buf[0] = 0x5C;
     timeout = MPU_TWI_TIMEOUT;
 
+    // LOW_POWER mode with sleep phase duration of 500 ms 
     bma250_i2c_bus_write(BMA2x2_MODE_CTRL_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
@@ -392,7 +428,7 @@ uint32_t bma250_slope_set()
     spi_xfer_done = false;
     m_tx_buf[0] = BMA2x2_RANGE_2G;
     timeout = MPU_TWI_TIMEOUT;
-    //  select the accelerometer g-range 
+    //  select the accelerometer g-range (here 2g range, the lowest)
     bma250_i2c_bus_write(BMA2x2_RANGE_SELECT_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
@@ -406,13 +442,14 @@ uint32_t bma250_slope_set()
              if(!timeout) return NRF_ERROR_TIMEOUT;
     */
 
-    spi_xfer_done = false;
+/* Wisol I comment 
+   spi_xfer_done = false;
     m_tx_buf[0] = 0x07;
     timeout = MPU_TWI_TIMEOUT;
     // control which interrupt engines in group 1
     bma250_i2c_bus_write(BMA2x2_INTR_ENABLE2_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
-    if(!timeout) return NRF_ERROR_TIMEOUT;
+    if(!timeout) return NRF_ERROR_TIMEOUT;*/
 
 /*
         spi_xfer_done = false;
@@ -424,7 +461,8 @@ uint32_t bma250_slope_set()
         if(!timeout) return NRF_ERROR_TIMEOUT;
         
 */
-            spi_xfer_done = false;
+/* Wisol I comment
+           spi_xfer_done = false;
             m_tx_buf[0] = 0xFF;
             timeout = MPU_TWI_TIMEOUT;
         // slope thread
@@ -438,13 +476,59 @@ uint32_t bma250_slope_set()
     // contains the delay time definition for the high-g interrupt
     bma250_i2c_bus_write(BMA2x2_HIGH_DURN_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
+    if(!timeout) return NRF_ERROR_TIMEOUT;*/
+
+
+    // - - - SLOPE / ANY-MOTION DETECTION CONF - - - 
+    
+    spi_xfer_done = false;
+    m_tx_buf[0] = BMA2x2_RANGE_2G;
+    timeout = MPU_TWI_TIMEOUT;
+    //  select the accelerometer g-range 
+    bma250_i2c_bus_write(BMA2x2_RANGE_SELECT_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
+
+    spi_xfer_done = false;
+    m_tx_buf[0] = 0x07;
+    timeout = MPU_TWI_TIMEOUT;
+    // Controls which interrupt engines in group 0 are enabled. 
+    // slope interrupts for z,y and x axis enabled
+    bma250_i2c_bus_write(BMA2x2_INTR_ENABLE1_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    while((!spi_xfer_done) && --timeout);
+    if(!timeout) return NRF_ERROR_TIMEOUT;
+
+    spi_xfer_done = false;
+    m_tx_buf[0] = 0x04;
+    timeout = MPU_TWI_TIMEOUT;
+    // Threshold of the any-motion interrupt. 3.91 mg for 2-g range 
+    bma250_i2c_bus_write(BMA2x2_SLOPE_THRES_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    while((!spi_xfer_done) && --timeout);
+    if(!timeout) return NRF_ERROR_TIMEOUT;
+
+    spi_xfer_done = false;
+    m_tx_buf[0] = 0x01;
+    timeout = MPU_TWI_TIMEOUT;
+    // slope interrupt triggers if [slope_dur<1:0> (=1) +1] consecutive slope data points 
+    // are above the slope interrupt threshold slope_th<7:0>
+    bma250_i2c_bus_write(BMA2x2_SLOPE_DURN_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    while((!spi_xfer_done) && --timeout);
+    if(!timeout) return NRF_ERROR_TIMEOUT;
+
+    // - - - END SLOPE / ANY-MOTION DETECTION CONF- - - 
+
+
+
 
     nrf_delay_ms(10);
     spi_xfer_done = false;
-    m_tx_buf[0] = 0x02;
+    m_tx_buf[0] = 0x07;//or: 02
     timeout = MPU_TWI_TIMEOUT;
     // controls which interrupt signals are mapped to the INT1 pin
+    // 0x01 => low-g to INT1 pin
+    // 0x02 => map high-g to INT1 pin (works well)
+    // 0x04 => slope interrupt to INT1 pin 
+    // 0x08 => low/no-motion interrupt to INT1 pin
     bma250_i2c_bus_write(BMA2x2_INTR1_PAD_SELECT_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;

@@ -68,6 +68,8 @@ bool main_wakeup_evt_expired = false;
 uint8_t   m_main_sec_tick;
 
 static uint8_t m_beacon_info[APP_BEACON_INFO_LENGTH];
+bool accel_interrupt = false;
+volatile bool main_wakeup_interrupt; //from cfg_board
 
 unsigned int main_get_param_val(module_parameter_item_e item)
 {
@@ -362,6 +364,66 @@ static void main_resource_init(void)
     main_sec_tick_timer_init();
 }
 
+void main_wakeup_interrupt_set(void)
+{
+    main_wakeup_interrupt = true;
+}
+
+/**
+ * @brief Callback function for handling iterrupt from accelerometer.
+ */
+void accelerometer_int_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    main_wakeup_interrupt_set();
+    //accel_interrupt=true; 
+    cPrintLog(CDBG_MAIN_LOG,"%s", "Interrupt flag raised !\n");
+}
+
+/**
+ * @brief  function for setting interrupt from accelerometer.
+ */
+void accelerometer_interrupt_init(void)
+{
+    uint32_t err_code;
+    nrf_drv_gpiote_in_config_t in_config = GPIOTE_CONFIG_IN_SENSE_LOTOHI(false);
+
+    if (!nrf_drv_gpiote_is_init())
+    {
+        // Initialize GPIO Interrupt Driver
+        err_code = nrf_drv_gpiote_init();
+        APP_ERROR_CHECK(err_code);
+    }
+    // Initialize PIN_DEF_ACC_INT1 as GPIOTE Input Pin
+    err_code = nrf_drv_gpiote_in_init(PIN_DEF_ACC_INT1, &in_config, accelerometer_int_handler);
+    APP_ERROR_CHECK(err_code);
+
+    nrf_drv_gpiote_in_event_enable(PIN_DEF_ACC_INT1, true);
+}
+
+static void Init_accel(void)
+{
+    cfg_i2c_master_init();
+    cfg_bma250_timer_create();
+    bma250_set_state(NONE_ACC);
+    if(bma250_get_state() == NONE_ACC)
+    {
+        cPrintLog(CDBG_MAIN_LOG, "%s %d ACC MODULE started\n",  __func__, __LINE__);
+        bma250_set_state(SET_S);
+        cfg_bma250_timers_start();
+    }  
+    accelerometer_interrupt_init();
+
+    while(1)
+    {
+        nrf_delay_ms(200);
+        if(bma250_get_state() == NONE_ACC || bma250_get_state() == EXIT_ACC)
+        {
+            cfg_bma250_timers_stop();
+            break;
+        }
+    }
+}
+
 static void Init_sigfox(void)
 {
 //    m_module_parameter.sigfox_snek_testmode_enable = true;  //snek test mode
@@ -388,6 +450,7 @@ static void Init_gps(void)
 static void init_module(void)
 {   
     main_resource_init();
+    Init_accel();
     Init_sigfox();
     Init_wifi();
     Init_ble();
@@ -484,23 +547,26 @@ int main(void)
     Wifi_set_scan_time(10);
     Gps_set_scan_time(30);
     Ble_set_payload("testpayload");
-    main_wakeup_timer_start(600);  // Here you shoud set up a timer to wake up every 600s
+    //main_wakeup_timer_start(20);  // Here you shoud set up a timer to wake up every 618s
 
     while(1)
     {
-        Wifi_get_scanned_BSSID(bssid);
-        cPrintLog(CDBG_MAIN_LOG, "WiFI AP Scan Result:"bssid);
+        /*Wifi_get_scanned_BSSID(bssid);
+        cPrintLog(CDBG_MAIN_LOG, "WiFI AP Scan Result:", bssid);
         //Sigfox_send_payload(bssid);
         if(gps_acquire(position) == true)
         { 
             cPrintLog(CDBG_MAIN_LOG, "GPS Scan Result: [%s]\n", position);
             //Sigfox_send_payload(position);
         }
-        Ble_start_beacon();
+        Ble_start_beacon();*/
 
         // Here you wait for the timer event.
         while(1)
         {
+            if (accel_interrupt) {
+                cPrintLog(CDBG_MAIN_LOG,"%s", "Acc interrupt !\n");
+            }
             if(main_wakeup_evt_expired)
             {
                 main_wakeup_evt_expired=false;
