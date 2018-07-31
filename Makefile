@@ -12,6 +12,8 @@ PROJ_DIR := $(THIS_DIR)
 
 SRC_FILES += \
   $(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/src/airqule_ble.c \
+  $(PROJ_DIR)/src/bme680.c \
   $(PROJ_DIR)/wisol/cfg_board.c \
   $(PROJ_DIR)/wisol/cfg_tmp102_module.c \
   $(PROJ_DIR)/wisol/cfg_external_sense_gpio.c \
@@ -152,8 +154,9 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/ble/ble_racp \
   $(SDK_ROOT)/components/libraries/timer \
   $(SDK_ROOT)/components/toolchain \
-  $(PROJ_DIR)/ \
+  $(PROJ_DIR)/inc \
   $(PROJ_DIR)/wisol \
+  $(PROJ_DIR)/ \
 	$(PROJ_DIR)/pca10040/s132/config \
   $(SDK_ROOT)/components/nfc/ndef/launchapp \
   $(SDK_ROOT)/components/libraries/led_softblink \

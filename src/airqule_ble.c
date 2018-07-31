@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include "fstorage.h"
 #include "cfg_board_def.h"
 #include "nordic_common.h"
 #include "softdevice_handler.h"
@@ -24,26 +25,20 @@
 
 #include "cfg_board_def.h"
 
-#include "ble_airqule.h"
+#include "airqule_ble.h"
 
-unsigned int main_get_param_val(module_parameter_item_e item)
-{
-    unsigned int ret = 0;
-    switch(item)
-    {
-        case module_parameter_item_snek_testmode_enable:
-            ret = m_module_parameter.sigfox_snek_testmode_enable;
-            break;
+#define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN + 2        /**< Reply when unsupported features are requested. */
+#if (NRF_SD_BLE_API_VERSION == 3)
+#define NRF_BLE_MAX_MTU_SIZE            GATT_MTU_SIZE_DEFAULT                       /**< MTU size used in the softdevice enabling and to reply to a BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST event. */
+#endif
+#define CENTRAL_LINK_COUNT              0                                           /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
+#define PERIPHERAL_LINK_COUNT           1                                           /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
+#define APP_BEACON_INFO_LENGTH          0x11
 
-        case module_parameter_item_gps_tracking_time_sec:
-            ret = m_module_parameter.gps_acquire_tracking_time_sec;
-            break;
+#define BLE_ADVERTISING_INTERVAL_MS     500
+#define BLE_ADVERTISING_TIMEOUT_MS      10000
 
-        default:
-            break;
-    }
-    return ret;
-}
+static uint8_t m_beacon_info[APP_BEACON_INFO_LENGTH];
 
 void on_ble_evt(ble_evt_t * p_ble_evt)
 {
@@ -58,6 +53,10 @@ void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_CONNECTED:
             cPrintLog(CDBG_MAIN_LOG, "BLE_GAP_EVT_CONNECTED.\r\n");
             break; // BLE_GAP_EVT_CONNECTED
+
+        case BLE_GAP_EVT_TIMEOUT:
+            cPrintLog(CDBG_MAIN_LOG, "BLE_GAP_EVT_TIMEOUT.\r\n");
+            break;
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
@@ -134,7 +133,7 @@ void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 
 void sys_evt_dispatch(uint32_t event)
 {
-    //fs_sys_event_handler(event);
+    fs_sys_event_handler(event);
     ble_advertising_on_sys_evt(event);
 }
 
@@ -245,21 +244,14 @@ void advertising_init(void)
 
     memset(&options, 0, sizeof(options));
     options.ble_adv_fast_enabled  = true;
-    options.ble_adv_fast_interval = MSEC_TO_UNITS(200, UNIT_0_625_MS);  //200ms
-    options.ble_adv_fast_timeout = 60;
+    options.ble_adv_fast_interval = MSEC_TO_UNITS(BLE_ADVERTISING_INTERVAL_MS, UNIT_0_625_MS);
+    options.ble_adv_fast_timeout = BLE_ADVERTISING_TIMEOUT_MS / 1000;
 
     err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
     APP_ERROR_CHECK(err_code);
 }
-
-void Ble_set_payload(const char *name)
+void Init_ble(const char *name)
 {
     gap_params_init(name, strlen(name));
-    advertising_init();
-}
-
-void Init_ble(void)
-{
-    gap_params_init(NULL, 0);
     advertising_init();
 }

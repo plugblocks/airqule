@@ -485,7 +485,7 @@ uint32_t bma250_slope_set()
     m_tx_buf[0] = BMA2x2_RANGE_2G;
     timeout = MPU_TWI_TIMEOUT;
     //  select the accelerometer g-range 
-    bma250_i2c_bus_write(BMA2x2_RANGE_SELECT_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    bma250_i2c_bus_write(BMA2x2_RANGE_SELECT_ADDR, m_tx_buf, BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
 
@@ -494,15 +494,15 @@ uint32_t bma250_slope_set()
     timeout = MPU_TWI_TIMEOUT;
     // Controls which interrupt engines in group 0 are enabled. 
     // slope interrupts for z,y and x axis enabled
-    bma250_i2c_bus_write(BMA2x2_INTR_ENABLE1_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    bma250_i2c_bus_write(BMA2x2_INTR_ENABLE1_ADDR, m_tx_buf, BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
 
     spi_xfer_done = false;
-    m_tx_buf[0] = 0x04;
+    m_tx_buf[0] = 0x06;
     timeout = MPU_TWI_TIMEOUT;
     // Threshold of the any-motion interrupt. 3.91 mg for 2-g range 
-    bma250_i2c_bus_write(BMA2x2_SLOPE_THRES_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    bma250_i2c_bus_write(BMA2x2_SLOPE_THRES_ADDR, m_tx_buf, BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
 
@@ -511,7 +511,7 @@ uint32_t bma250_slope_set()
     timeout = MPU_TWI_TIMEOUT;
     // slope interrupt triggers if [slope_dur<1:0> (=1) +1] consecutive slope data points 
     // are above the slope interrupt threshold slope_th<7:0>
-    bma250_i2c_bus_write(BMA2x2_SLOPE_DURN_ADDR,m_tx_buf,BMA2x2_GEN_READ_WRITE_LENGTH);
+    bma250_i2c_bus_write(BMA2x2_SLOPE_DURN_ADDR, m_tx_buf, BMA2x2_GEN_READ_WRITE_LENGTH);
     while((!spi_xfer_done) && --timeout);
     if(!timeout) return NRF_ERROR_TIMEOUT;
 
@@ -522,7 +522,7 @@ uint32_t bma250_slope_set()
 
     nrf_delay_ms(10);
     spi_xfer_done = false;
-    m_tx_buf[0] = 0x07;//or: 02
+    m_tx_buf[0] = 0x04;//or: 02
     timeout = MPU_TWI_TIMEOUT;
     // controls which interrupt signals are mapped to the INT1 pin
     // 0x01 => low-g to INT1 pin

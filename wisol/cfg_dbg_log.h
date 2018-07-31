@@ -50,6 +50,10 @@ extern "C" {
 #define CDBG_EXT_SEN_DBG    27
 #define CDBG_EXT_SEN_ERR    28
 
+#define CDBG_IOT_INFO       29
+#define CDBG_IOT_DBG        30
+#define CDBG_IOT_ERR        31
+
 #ifdef FEATURE_CFG_DEBUG_PRINT_OUT
 
 #define CDBG_mask_val_get() CDBGOutMask
@@ -80,6 +84,9 @@ unsigned int CDBGOutMask= 0 \
     | CDBG_NUM2MASK(CDBG_TBC_ERR) \
     | CDBG_NUM2MASK(CDBG_EXT_SEN_INFO) \
     | CDBG_NUM2MASK(CDBG_EXT_SEN_ERR) \
+    | CDBG_NUM2MASK(CDBG_IOT_INFO) \
+    | CDBG_NUM2MASK(CDBG_IOT_DBG) \
+    | CDBG_NUM2MASK(CDBG_IOT_ERR) \
 ;
 
 #if defined(NRF_LOG_USES_RTT) && (NRF_LOG_USES_RTT == 1)
