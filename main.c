@@ -43,19 +43,17 @@
 #include "nrf_drv_clock.h"
 #include "cfg_external_sense_gpio.h"
 
-
 #include "airqule_ble.h"
 #include "bme680.h"
 
 
 #define MAIN_INTERVAL_MS                120000
-#define MEASURE_INTERVAL                120
+#define MICS5524_ENABLED                1
+#define BME680_ENABLED                  1
 #define BLE_ENABLED                     1
 #define WIFI_ENABLED                    1
-#define GPS_ENABLED                     1
-#define SIGFOX_ENABLED                  0
-#define CCS811_ENABLED                  0
-#define BME280_ENABLED                  0
+#define GPS_ENABLED                     0
+#define SIGFOX_ENABLED                  1
 
 APP_TIMER_DEF(main_wakeup_timer_id);
 APP_TIMER_DEF(main_sec_tick_timer_id);
@@ -385,8 +383,7 @@ void bme280_init(void)
 
 int main(void)
 {
-    unsigned char bssid[12];
-    unsigned char position[12];
+    unsigned char sigfox_payload[12];
 
     init_module();
 
@@ -395,7 +392,7 @@ int main(void)
     get_device_ids();
     cPrintLog(CDBG_IOT_INFO, "+--------------------------------------------------------+\n");
     
-    uint8_t * chip_id;
+    uint8_t *chip_id;
     //bme680_i2c_bus_read(BME680_CHIP_ID_ADDRESS, chip_id, 1);
     cPrintLog(CDBG_IOT_INFO, "chip_id: [%02x]", chip_id);
 
@@ -408,12 +405,23 @@ int main(void)
     while(1)
     {
         if (WIFI_ENABLED) {
-            Wifi_get_scanned_BSSID(bssid);
-            if (SIGFOX_ENABLED) Sigfox_send_payload(bssid);
+            Wifi_get_scanned_BSSID(sigfox_payload);
+            if (SIGFOX_ENABLED) Sigfox_send_payload(sigfox_payload);
         }
-        if (GPS_ENABLED && gps_acquire(position) == true) { 
-            if (SIGFOX_ENABLED) Sigfox_send_payload(position);
+        if (GPS_ENABLED && gps_acquire(sigfox_payload) == true) { 
+            if (SIGFOX_ENABLED) Sigfox_send_payload(sigfox_payload);
         }
+
+        if (BME680_ENABLED || MICS5524_ENABLED) {
+            uint8_t *bme_vals;
+            bme680_measure_sigfox(bme_vals);
+            uint8_t *mics;
+            mics5524_get_result(mics);
+            memcpy(bme_vals, mics, 2);
+            if (SIGFOX_ENABLED) Sigfox_send_payload(bme_vals);
+        }
+
+
 
         // Here you wait for the timer event.
         while(1)

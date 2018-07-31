@@ -14,6 +14,7 @@ SRC_FILES += \
   $(PROJ_DIR)/main.c \
   $(PROJ_DIR)/src/airqule_ble.c \
   $(PROJ_DIR)/src/bme680.c \
+  $(PROJ_DIR)/src/mics5524.c \
   $(PROJ_DIR)/wisol/cfg_board.c \
   $(PROJ_DIR)/wisol/cfg_tmp102_module.c \
   $(PROJ_DIR)/wisol/cfg_external_sense_gpio.c \
